@@ -43,17 +43,19 @@
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 420px;
-      padding: 20px;
+      max-width: 340px;
+      padding: 4px;
     }
 
     .login-card {
       background: rgba(20, 20, 28, 0.95);
       backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      border-radius: 18px;
+      padding: 12px 10px 10px 10px;
+      overflow-y: auto;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      padding-bottom: 32px;
     }
 
     .logo {
@@ -126,7 +128,7 @@
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .form-group label {
@@ -172,7 +174,7 @@
       background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
       color: white;
       box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-      margin-top: 10px;
+      margin-top: 4px;
     }
 
     .btn:hover {
@@ -232,7 +234,12 @@
       text-align: center;
       color: #71717a;
       font-size: 0.8rem;
-      margin-top: 20px;
+      margin-top: 6px;
+      width: 100%;
+      display: block;
+      z-index: 9999;
+      background: transparent;
+      position: relative;
     }
 
     .footer-text a {
@@ -267,7 +274,8 @@
     /* Google Sign-In Button */
     .google-btn {
       width: 100%;
-      padding: 14px 20px;
+      padding: 16px 20px;
+      margin: 10px 0 10px 0;
       background: #fff;
       border: 1px solid rgba(0, 0, 0, 0.1);
       border-radius: 12px;
@@ -282,16 +290,6 @@
       gap: 12px;
       transition: all 0.2s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      /* Prevent scaling from parent containers */
-      transform: none !important;
-      margin: 0 auto 0 auto;
-      /* Fix for zoom/stretch issues in flex/column layouts */
-      flex-shrink: 0;
-      flex-grow: 0;
-      font-size: 1rem;
     }
 
     .google-btn:hover {
@@ -406,11 +404,9 @@
             Create Account
           </button>
         </form>
-        
-        <div class="divider"><span>or</span></div>
-        
-        <button class="google-btn" id="google-btn-register" onclick="handleGoogleSignIn()">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <div style="width:100%;display:flex;justify-content:center;">
+        <button class="google-btn" id="google-btn-register" style="margin:40px 0 0 0;display:block;z-index:9999;position:relative;" onclick="handleGoogleSignIn()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:-2px;">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -418,6 +414,7 @@
           </svg>
           Continue with Google
         </button>
+      </div>
       </div>
 
       <div class="footer-text">
@@ -427,20 +424,15 @@
   </div>
 
   <script>
-
-    // Store widget IDs for reCAPTCHA
-    let recaptchaLoginWidgetId = null;
-    let recaptchaRegisterWidgetId = null;
-
     function switchTab(tab) {
       // Update tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`.tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
-
+      
       // Update forms
       document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
       document.getElementById(`${tab}-form`).classList.add('active');
-
+      
       // Clear messages
       hideMessages();
     }
@@ -478,28 +470,28 @@
     async function handleLogin(e) {
       e.preventDefault();
       hideMessages();
-
-      // Verify reCAPTCHA using widget ID
-      const recaptchaResponse = grecaptcha.getResponse(recaptchaLoginWidgetId);
+      
+      // Verify reCAPTCHA
+      const recaptchaResponse = grecaptcha.getResponse(0); // First reCAPTCHA widget (login)
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification');
         return;
       }
-
+      
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
-
+      
       setLoading('login-btn', true);
-
+      
       try {
         const response = await fetch('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, recaptcha_token: recaptchaResponse })
         });
-
+        
         const data = await response.json();
-
+        
         if (response.ok) {
           showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
@@ -507,11 +499,11 @@
           }, 1000);
         } else {
           showError(data.error || 'Login failed');
-          grecaptcha.reset(recaptchaLoginWidgetId); // Reset reCAPTCHA on failure
+          grecaptcha.reset(0); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         showError('Connection error. Please try again.');
-        grecaptcha.reset(recaptchaLoginWidgetId); // Reset reCAPTCHA on error
+        grecaptcha.reset(0); // Reset reCAPTCHA on error
       } finally {
         setLoading('login-btn', false);
       }
@@ -520,35 +512,35 @@
     async function handleRegister(e) {
       e.preventDefault();
       hideMessages();
-
+      
       const name = document.getElementById('register-name').value;
       const email = document.getElementById('register-email').value;
       const password = document.getElementById('register-password').value;
       const confirm = document.getElementById('register-confirm').value;
-
+      
       if (password !== confirm) {
         showError('Passwords do not match');
         return;
       }
-
-      // Verify reCAPTCHA using widget ID
-      const recaptchaResponse = grecaptcha.getResponse(recaptchaRegisterWidgetId);
+      
+      // Verify reCAPTCHA
+      const recaptchaResponse = grecaptcha.getResponse(1); // Second reCAPTCHA widget (register)
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification');
         return;
       }
-
+      
       setLoading('register-btn', true);
-
+      
       try {
         const response = await fetch('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, recaptcha_token: recaptchaResponse })
         });
-
+        
         const data = await response.json();
-
+        
         if (response.ok) {
           showSuccess('Account created! Redirecting...');
           setTimeout(() => {
@@ -556,11 +548,11 @@
           }, 1000);
         } else {
           showError(data.error || 'Registration failed');
-          grecaptcha.reset(recaptchaRegisterWidgetId); // Reset reCAPTCHA on failure
+          grecaptcha.reset(1); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         showError('Connection error. Please try again.');
-        grecaptcha.reset(recaptchaRegisterWidgetId); // Reset reCAPTCHA on error
+        grecaptcha.reset(1); // Reset reCAPTCHA on error
       } finally {
         setLoading('register-btn', false);
       }
@@ -569,21 +561,22 @@
     // Google Sign-In using popup
     async function handleGoogleSignIn() {
       hideMessages();
-
+      
       // Check which tab is active and verify the corresponding reCAPTCHA
-      const isLoginTab = document.getElementById('login-form').classList.contains('active');
-      const recaptchaWidgetId = isLoginTab ? recaptchaLoginWidgetId : recaptchaRegisterWidgetId;
-      const recaptchaResponse = grecaptcha.getResponse(recaptchaWidgetId);
-
+      const loginFormActive = document.getElementById('login-form').classList.contains('active');
+      const registerFormActive = document.getElementById('register-form').classList.contains('active');
+      let recaptchaIndex = 0;
+      if (registerFormActive) recaptchaIndex = 1;
+      const recaptchaResponse = grecaptcha.getResponse(recaptchaIndex);
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification first');
         return;
       }
-
+      
       // Set loading state on both Google buttons
       document.getElementById('google-btn-login').classList.add('loading');
       document.getElementById('google-btn-register').classList.add('loading');
-
+      
       try {
         // Initialize Firebase
         const firebaseConfig = {
@@ -594,22 +587,22 @@
           messagingSenderId: "471453546750",
           appId: "1:471453546750:web:34298662fb67c373c50daf"
         };
-
+        
         // Initialize Firebase if not already done
         if (!firebase.apps.length) {
           firebase.initializeApp(firebaseConfig);
         }
-
+        
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-
+        
         const result = await firebase.auth().signInWithPopup(provider);
         const user = result.user;
-
+        
         // Get ID token to send to backend
         const idToken = await user.getIdToken();
-
+        
         // Send to our backend
         const response = await fetch('/auth/google', {
           method: 'POST',
@@ -621,9 +614,9 @@
             photoURL: user.photoURL
           })
         });
-
+        
         const data = await response.json();
-
+        
         if (response.ok) {
           showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
@@ -631,7 +624,7 @@
           }, 1000);
         } else {
           showError(data.error || 'Google sign-in failed');
-          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on failure
+          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         console.error('Google Sign-In Error:', err);
@@ -639,27 +632,15 @@
           // User closed the popup, no error needed
         } else if (err.code === 'auth/popup-blocked') {
           showError('Popup was blocked. Please allow popups for this site.');
-          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
+          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on error
         } else {
           showError('Google sign-in failed. Please try again.');
-          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
+          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on error
         }
       } finally {
         document.getElementById('google-btn-login').classList.remove('loading');
         document.getElementById('google-btn-register').classList.remove('loading');
       }
-    }
-
-    // Render reCAPTCHA widgets and store their IDs
-    window.onload = function() {
-      recaptchaLoginWidgetId = grecaptcha.render('recaptcha-login', {
-        'sitekey': '6Lfk8UUsAAAAAGpmI4XBjGjhk8M9kYzHB9Ez-VqD',
-        'theme': 'dark'
-      });
-      recaptchaRegisterWidgetId = grecaptcha.render('recaptcha-register', {
-        'sitekey': '6Lfk8UUsAAAAAGpmI4XBjGjhk8M9kYzHB9Ez-VqD',
-        'theme': 'dark'
-      });
     }
   </script>
   
