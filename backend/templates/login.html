@@ -282,6 +282,16 @@
       gap: 12px;
       transition: all 0.2s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      /* Prevent scaling from parent containers */
+      transform: none !important;
+      margin: 0 auto 0 auto;
+      /* Fix for zoom/stretch issues in flex/column layouts */
+      flex-shrink: 0;
+      flex-grow: 0;
+      font-size: 1rem;
     }
 
     .google-btn:hover {
@@ -417,15 +427,20 @@
   </div>
 
   <script>
+
+    // Store widget IDs for reCAPTCHA
+    let recaptchaLoginWidgetId = null;
+    let recaptchaRegisterWidgetId = null;
+
     function switchTab(tab) {
       // Update tabs
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`.tab:${tab === 'login' ? 'first-child' : 'last-child'}`).classList.add('active');
-      
+
       // Update forms
       document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
       document.getElementById(`${tab}-form`).classList.add('active');
-      
+
       // Clear messages
       hideMessages();
     }
@@ -463,28 +478,28 @@
     async function handleLogin(e) {
       e.preventDefault();
       hideMessages();
-      
-      // Verify reCAPTCHA
-      const recaptchaResponse = grecaptcha.getResponse(0); // First reCAPTCHA widget (login)
+
+      // Verify reCAPTCHA using widget ID
+      const recaptchaResponse = grecaptcha.getResponse(recaptchaLoginWidgetId);
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification');
         return;
       }
-      
+
       const email = document.getElementById('login-email').value;
       const password = document.getElementById('login-password').value;
-      
+
       setLoading('login-btn', true);
-      
+
       try {
         const response = await fetch('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password, recaptcha_token: recaptchaResponse })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
@@ -492,11 +507,11 @@
           }, 1000);
         } else {
           showError(data.error || 'Login failed');
-          grecaptcha.reset(0); // Reset reCAPTCHA on failure
+          grecaptcha.reset(recaptchaLoginWidgetId); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         showError('Connection error. Please try again.');
-        grecaptcha.reset(0); // Reset reCAPTCHA on error
+        grecaptcha.reset(recaptchaLoginWidgetId); // Reset reCAPTCHA on error
       } finally {
         setLoading('login-btn', false);
       }
@@ -505,35 +520,35 @@
     async function handleRegister(e) {
       e.preventDefault();
       hideMessages();
-      
+
       const name = document.getElementById('register-name').value;
       const email = document.getElementById('register-email').value;
       const password = document.getElementById('register-password').value;
       const confirm = document.getElementById('register-confirm').value;
-      
+
       if (password !== confirm) {
         showError('Passwords do not match');
         return;
       }
-      
-      // Verify reCAPTCHA
-      const recaptchaResponse = grecaptcha.getResponse(1); // Second reCAPTCHA widget (register)
+
+      // Verify reCAPTCHA using widget ID
+      const recaptchaResponse = grecaptcha.getResponse(recaptchaRegisterWidgetId);
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification');
         return;
       }
-      
+
       setLoading('register-btn', true);
-      
+
       try {
         const response = await fetch('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, recaptcha_token: recaptchaResponse })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           showSuccess('Account created! Redirecting...');
           setTimeout(() => {
@@ -541,11 +556,11 @@
           }, 1000);
         } else {
           showError(data.error || 'Registration failed');
-          grecaptcha.reset(1); // Reset reCAPTCHA on failure
+          grecaptcha.reset(recaptchaRegisterWidgetId); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         showError('Connection error. Please try again.');
-        grecaptcha.reset(1); // Reset reCAPTCHA on error
+        grecaptcha.reset(recaptchaRegisterWidgetId); // Reset reCAPTCHA on error
       } finally {
         setLoading('register-btn', false);
       }
@@ -554,21 +569,21 @@
     // Google Sign-In using popup
     async function handleGoogleSignIn() {
       hideMessages();
-      
+
       // Check which tab is active and verify the corresponding reCAPTCHA
-      const isLoginTab = document.getElementById('login-form').style.display !== 'none';
-      const recaptchaIndex = isLoginTab ? 0 : 1; // 0 for login, 1 for register
-      const recaptchaResponse = grecaptcha.getResponse(recaptchaIndex);
-      
+      const isLoginTab = document.getElementById('login-form').classList.contains('active');
+      const recaptchaWidgetId = isLoginTab ? recaptchaLoginWidgetId : recaptchaRegisterWidgetId;
+      const recaptchaResponse = grecaptcha.getResponse(recaptchaWidgetId);
+
       if (!recaptchaResponse) {
         showError('Please complete the reCAPTCHA verification first');
         return;
       }
-      
+
       // Set loading state on both Google buttons
       document.getElementById('google-btn-login').classList.add('loading');
       document.getElementById('google-btn-register').classList.add('loading');
-      
+
       try {
         // Initialize Firebase
         const firebaseConfig = {
@@ -579,22 +594,22 @@
           messagingSenderId: "471453546750",
           appId: "1:471453546750:web:34298662fb67c373c50daf"
         };
-        
+
         // Initialize Firebase if not already done
         if (!firebase.apps.length) {
           firebase.initializeApp(firebaseConfig);
         }
-        
+
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
-        
+
         const result = await firebase.auth().signInWithPopup(provider);
         const user = result.user;
-        
+
         // Get ID token to send to backend
         const idToken = await user.getIdToken();
-        
+
         // Send to our backend
         const response = await fetch('/auth/google', {
           method: 'POST',
@@ -606,9 +621,9 @@
             photoURL: user.photoURL
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
@@ -616,7 +631,7 @@
           }, 1000);
         } else {
           showError(data.error || 'Google sign-in failed');
-          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on failure
+          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on failure
         }
       } catch (err) {
         console.error('Google Sign-In Error:', err);
@@ -624,15 +639,27 @@
           // User closed the popup, no error needed
         } else if (err.code === 'auth/popup-blocked') {
           showError('Popup was blocked. Please allow popups for this site.');
-          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on error
+          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
         } else {
           showError('Google sign-in failed. Please try again.');
-          grecaptcha.reset(recaptchaIndex); // Reset reCAPTCHA on error
+          grecaptcha.reset(recaptchaWidgetId); // Reset reCAPTCHA on error
         }
       } finally {
         document.getElementById('google-btn-login').classList.remove('loading');
         document.getElementById('google-btn-register').classList.remove('loading');
       }
+    }
+
+    // Render reCAPTCHA widgets and store their IDs
+    window.onload = function() {
+      recaptchaLoginWidgetId = grecaptcha.render('recaptcha-login', {
+        'sitekey': '6Lfk8UUsAAAAAGpmI4XBjGjhk8M9kYzHB9Ez-VqD',
+        'theme': 'dark'
+      });
+      recaptchaRegisterWidgetId = grecaptcha.render('recaptcha-register', {
+        'sitekey': '6Lfk8UUsAAAAAGpmI4XBjGjhk8M9kYzHB9Ez-VqD',
+        'theme': 'dark'
+      });
     }
   </script>
   
