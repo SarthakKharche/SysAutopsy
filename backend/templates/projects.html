@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SysAutopsy | Projects</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f0f14;
+      min-height: 100vh;
+      color: #e4e4e7;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.03) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.03) 0%, transparent 50%);
+      animation: backgroundShift 20s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes backgroundShift {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(5%, 5%) rotate(1deg); }
+    }
+
+    /* Top Navigation */
+    .top-nav {
+      background: rgba(20, 20, 28, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .logo h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .logo span {
+      color: #8b5cf6;
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #a1a1aa;
+      font-size: 0.9rem;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .logout-btn {
+      padding: 8px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      background: transparent;
+      color: #a1a1aa;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .logout-btn:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* Main Content */
+    .main-content {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+
+    .page-header h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .page-header p {
+      color: #71717a;
+      margin-top: 8px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: white;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+    }
+
+    /* Projects Grid */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .project-card {
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .project-card:hover {
+      border-color: rgba(139, 92, 246, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .project-card.selected {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .project-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .project-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .project-card p {
+      color: #71717a;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .project-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.75rem;
+      color: #52525b;
+    }
+
+    .project-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 40px;
+      background: rgba(20, 20, 28, 0.6);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .empty-state p {
+      color: #71717a;
+      font-size: 0.9rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: rgba(20, 20, 28, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 32px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h3 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .modal p {
+      color: #71717a;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #a1a1aa;
+      margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder {
+      color: #52525b;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #a1a1aa;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    /* Loading */
+    .loading-spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(139, 92, 246, 0.2);
+      border-radius: 50%;
+      border-top-color: #8b5cf6;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Action Button on Card */
+    .project-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .project-actions .btn {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 0.8rem;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4);
+    }
+
+    /* Project Detail View */
+    .project-detail {
+      display: none;
+    }
+
+    .project-detail.active {
+      display: block;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #a1a1aa;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .project-detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .project-detail-info h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .project-detail-info p {
+      color: #71717a;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .project-detail-meta {
+      display: flex;
+      gap: 20px;
+      color: #52525b;
+      font-size: 0.85rem;
+    }
+
+    .project-detail-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-analyze {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      color: white;
+      padding: 14px 28px;
+      font-size: 1rem;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-analyze:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+    }
+
+    .reports-section h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .reports-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .report-card {
+      background: rgba(20, 20, 28, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .report-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+      background: rgba(30, 30, 40, 0.8);
+    }
+
+    .report-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .report-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .report-card-date {
+      font-size: 0.8rem;
+      color: #52525b;
+    }
+
+    .report-card-body {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .report-cause {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #f87171;
+    }
+
+    .report-risk {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .report-risk.CRITICAL {
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      color: #ef4444;
+    }
+
+    .report-risk.HIGH {
+      background: rgba(249, 115, 22, 0.1);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      color: #f97316;
+    }
+
+    .report-risk.MEDIUM {
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #eab308;
+    }
+
+    .report-risk.LOW {
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+    }
+
+    .empty-reports {
+      text-align: center;
+      padding: 40px;
+      background: rgba(20, 20, 28, 0.6);
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: #71717a;
+    }
+
+    .empty-reports-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    /* Analysis Detail Modal */
+    .analysis-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      z-index: 1000;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    .analysis-modal.active {
+      display: flex;
+    }
+
+    .analysis-modal-content {
+      background: rgba(20, 20, 28, 0.98);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 900px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .analysis-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 32px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .analysis-modal-header h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .close-modal-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #a1a1aa;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .close-modal-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .analysis-modal-body {
+      padding: 32px;
+    }
+
+    .analysis-section {
+      margin-bottom: 28px;
+    }
+
+    .analysis-section h4 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8b5cf6;
+      margin-bottom: 12px;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .analysis-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .analysis-item-label {
+      font-size: 0.75rem;
+      color: #71717a;
+      margin-bottom: 4px;
+    }
+
+    .analysis-item-value {
+      font-size: 0.95rem;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .analysis-probabilities {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .probability-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .probability-label {
+      width: 180px;
+      font-size: 0.85rem;
+      color: #a1a1aa;
+    }
+
+    .probability-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .probability-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #6366f1);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .probability-value {
+      width: 50px;
+      text-align: right;
+      font-size: 0.85rem;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .analysis-explanation {
+      background: rgba(139, 92, 246, 0.05);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .analysis-explanation ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .analysis-explanation li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      color: #a1a1aa;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .analysis-explanation li::before {
+      content: "•";
+      position: absolute;
+      left: 8px;
+      color: #8b5cf6;
+    }
+
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+
+    .timeline-time {
+      color: #71717a;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+    }
+
+    .timeline-event {
+      color: #e4e4e7;
+    }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="logo">
+      <h1>Sys<span>Autopsy</span></h1>
+    </div>
+    <div class="nav-right">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span id="user-name">User</span>
+      </div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h2>Your Projects</h2>
+        <p>Select a project to continue analysis or create a new one</p>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <span>➕</span> New Project
+      </button>
+    </div>
+
+    <div id="projects-container">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- Project Detail View -->
+    <div id="project-detail" class="project-detail">
+      <button class="back-btn" onclick="backToProjects()">
+        ← Back to Projects
+      </button>
+      
+      <div class="project-detail-header">
+        <div class="project-detail-info">
+          <h2 id="detail-project-name">Project Name</h2>
+          <p id="detail-project-desc">Project description</p>
+          <div class="project-detail-meta">
+            <span>📁 <span id="detail-log-count">0</span> analyses</span>
+            <span>🕒 Created <span id="detail-created">-</span></span>
+          </div>
+        </div>
+        <button class="btn btn-analyze" onclick="startNewAnalysis()">
+          ➕ New Analysis
+        </button>
+      </div>
+
+      <div class="reports-section">
+        <h3>Previous Analyses</h3>
+        <div id="reports-list" class="reports-list">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Project Modal -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal">
+      <h3>Create New Project</h3>
+      <p>Create a project to organize and analyze related log files together</p>
+      
+      <div id="modal-error" class="error-message"></div>
+      
+      <form onsubmit="createProject(event)">
+        <div class="form-group">
+          <label for="project-name">Project Name *</label>
+          <input type="text" id="project-name" placeholder="e.g., Production Server Monitoring" required>
+        </div>
+        <div class="form-group">
+          <label for="project-description">Description</label>
+          <textarea id="project-description" placeholder="Brief description of this project..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="project-system">System/Service Name</label>
+          <input type="text" id="project-system" placeholder="e.g., API Gateway, Database Cluster">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="create-btn">Create Project</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Analysis Detail Modal -->
+  <div class="analysis-modal" id="analysis-modal">
+    <div class="analysis-modal-content">
+      <div class="analysis-modal-header">
+        <h2 id="modal-analysis-title">Analysis Details</h2>
+        <button class="close-modal-btn" onclick="closeAnalysisModal()">✕</button>
+      </div>
+      <div class="analysis-modal-body">
+        <!-- Metadata Section -->
+        <div class="analysis-section">
+          <h4>Incident Information</h4>
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <div class="analysis-item-label">System Name</div>
+              <div class="analysis-item-value" id="modal-system">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Environment</div>
+              <div class="analysis-item-value" id="modal-env">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Severity</div>
+              <div class="analysis-item-value" id="modal-severity">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Incident Type</div>
+              <div class="analysis-item-value" id="modal-type">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Owning Team</div>
+              <div class="analysis-item-value" id="modal-team">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Analyzed On</div>
+              <div class="analysis-item-value" id="modal-date">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk & Root Cause -->
+        <div class="analysis-section">
+          <h4>Analysis Results</h4>
+          <div class="analysis-grid">
+            <div class="analysis-item">
+              <div class="analysis-item-label">Risk Level</div>
+              <div class="analysis-item-value" id="modal-risk" style="font-size: 1.1rem;">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Primary Root Cause</div>
+              <div class="analysis-item-value" id="modal-cause" style="color: #f87171;">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Alert Triggered</div>
+              <div class="analysis-item-value" id="modal-alert">-</div>
+            </div>
+            <div class="analysis-item">
+              <div class="analysis-item-label">Manual Intervention</div>
+              <div class="analysis-item-value" id="modal-manual">-</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Probabilities -->
+        <div class="analysis-section">
+          <h4>Root Cause Probabilities</h4>
+          <div class="analysis-probabilities" id="modal-probabilities">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- AI Explanation -->
+        <div class="analysis-section">
+          <h4>AI Analysis Explanation</h4>
+          <div class="analysis-explanation">
+            <ul id="modal-explanation">
+              <!-- Filled by JS -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="analysis-section">
+          <h4>Event Timeline</h4>
+          <div class="timeline-list" id="modal-timeline">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check authentication
+    async function checkAuth() {
+      try {
+        const response = await fetch('/auth/me');
+        if (!response.ok) {
+          window.location.href = '/login';
+          return null;
+        }
+        return await response.json();
+      } catch (err) {
+        window.location.href = '/login';
+        return null;
+      }
+    }
+
+    // Load projects
+    async function loadProjects() {
+      const container = document.getElementById('projects-container');
+      
+      try {
+        const response = await fetch('/projects/list');
+        const projects = await response.json();
+        
+        if (projects.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📁</div>
+              <h3>No projects yet</h3>
+              <p>Create your first project to start analyzing logs with AI-powered insights</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = `
+          <div class="projects-grid">
+            ${projects.map(p => `
+              <div class="project-card" data-id="${p.id}">
+                <div class="project-icon">📊</div>
+                <h3>${escapeHtml(p.name)}</h3>
+                <p>${escapeHtml(p.description || 'No description')}</p>
+                <div class="project-meta">
+                  <span>📁 ${p.log_count || 0} logs</span>
+                  <span>🕒 ${formatDate(p.created_at)}</span>
+                </div>
+                <div class="project-actions">
+                  <button class="btn btn-success" onclick="selectProject('${p.id}')">
+                    Open Project
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+      } catch (err) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Error loading projects</h3>
+            <p>Please try refreshing the page</p>
+          </div>
+        `;
+      }
+    }
+
+    // Select project and show detail view
+    async function selectProject(projectId) {
+      try {
+        const response = await fetch('/projects/select', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ project_id: projectId })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showProjectDetail(data.project);
+        }
+      } catch (err) {
+        console.error('Error selecting project:', err);
+      }
+    }
+
+    // Show project detail view
+    async function showProjectDetail(project) {
+      // Hide projects list, show detail view
+      document.getElementById('projects-container').style.display = 'none';
+      document.querySelector('.page-header').style.display = 'none';
+      document.getElementById('project-detail').classList.add('active');
+      
+      // Populate project info
+      document.getElementById('detail-project-name').textContent = project.name;
+      document.getElementById('detail-project-desc').textContent = project.description || 'No description';
+      document.getElementById('detail-log-count').textContent = project.log_count || 0;
+      document.getElementById('detail-created').textContent = formatDate(project.created_at);
+      
+      // Store current project
+      window.currentProject = project;
+      
+      // Load reports for this project
+      await loadProjectReports(project.id);
+    }
+
+    // Load project reports
+    async function loadProjectReports(projectId) {
+      const container = document.getElementById('reports-list');
+      container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+      
+      try {
+        const response = await fetch(`/projects/${projectId}/reports`);
+        const reports = await response.json();
+        
+        if (reports.length === 0) {
+          container.innerHTML = `
+            <div class="empty-reports">
+              <div class="empty-reports-icon">📋</div>
+              <p>No analyses yet. Click "New Analysis" to upload your first log file.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = reports.map((report, index) => {
+          const analysis = report.analysis || report;
+          const title = analysis.metadata?.incident_title || 'Untitled Analysis';
+          const cause = analysis.primary_root_cause || 'Unknown';
+          const risk = analysis.risk_level || 'MEDIUM';
+          const date = report.created_at ? new Date(report.created_at).toLocaleDateString('en-US', { 
+            month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+          }) : 'Unknown date';
+          
+          return `
+            <div class="report-card" onclick="showAnalysisDetail(${index})">
+              <div class="report-card-header">
+                <span class="report-card-title">${escapeHtml(title)}</span>
+                <span class="report-card-date">${date}</span>
+              </div>
+              <div class="report-card-body">
+                <span class="report-cause">🔍 ${escapeHtml(cause)}</span>
+                <span class="report-risk ${risk}">${risk}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        // Store reports for later access
+        window.projectReports = reports;
+        
+        // Update log count
+        document.getElementById('detail-log-count').textContent = reports.length;
+        
+      } catch (err) {
+        console.error('Error loading reports:', err);
+        container.innerHTML = `
+          <div class="empty-reports">
+            <div class="empty-reports-icon">⚠️</div>
+            <p>Failed to load reports. Please try again.</p>
+          </div>
+        `;
+      }
+    }
+
+    // Back to projects list
+    function backToProjects() {
+      document.getElementById('project-detail').classList.remove('active');
+      document.getElementById('projects-container').style.display = 'block';
+      document.querySelector('.page-header').style.display = 'flex';
+    }
+
+    // Start new analysis (go to dashboard)
+    function startNewAnalysis() {
+      window.location.href = '/dashboard';
+    }
+
+    // Show analysis detail - redirect to dashboard with report ID
+    async function showAnalysisDetail(index) {
+      const reports = window.projectReports || [];
+      console.log('showAnalysisDetail called with index:', index);
+      
+      if (index < 0 || index >= reports.length) {
+        console.error('Invalid index');
+        return;
+      }
+      
+      const report = reports[index];
+      console.log('Selected report:', report);
+      
+      // Redirect to dashboard with report_id in URL
+      window.location.href = `/dashboard?report_id=${report.id}`;
+    }
+
+    // Close analysis modal (kept for backward compatibility)
+    function closeAnalysisModal() {
+      document.getElementById('analysis-modal').classList.remove('active');
+    }
+
+    // Close modal on escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeAnalysisModal();
+        closeCreateModal();
+      }
+    });
+
+    // Open create modal
+    function openCreateModal() {
+      document.getElementById('create-modal').classList.add('active');
+    }
+
+    // Close create modal
+    function closeCreateModal() {
+      document.getElementById('create-modal').classList.remove('active');
+      document.getElementById('project-name').value = '';
+      document.getElementById('project-description').value = '';
+      document.getElementById('project-system').value = '';
+      document.getElementById('modal-error').style.display = 'none';
+    }
+
+    // Create project
+    async function createProject(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('project-name').value;
+      const description = document.getElementById('project-description').value;
+      const system_name = document.getElementById('project-system').value;
+      
+      const btn = document.getElementById('create-btn');
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+      
+      try {
+        const response = await fetch('/projects/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, system_name })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          closeCreateModal();
+          loadProjects();
+        } else {
+          document.getElementById('modal-error').textContent = data.error || 'Failed to create project';
+          document.getElementById('modal-error').style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('modal-error').textContent = 'Connection error. Please try again.';
+        document.getElementById('modal-error').style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Project';
+      }
+    }
+
+    // Logout
+    async function logout() {
+      try {
+        await fetch('/auth/logout', { method: 'POST' });
+      } catch (err) {}
+      window.location.href = '/login';
+    }
+
+    // Utility functions
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Unknown';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    // Initialize
+    async function init() {
+      const user = await checkAuth();
+      if (user) {
+        document.getElementById('user-name').textContent = user.name || user.email;
+        document.getElementById('user-avatar').textContent = (user.name || user.email)[0].toUpperCase();
+        loadProjects();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+timestamp,service,event,severity
+10:01,payment-service,ALERT_RAISED,HIGH
+10:15,payment-service,ALERT_IGNORED,HIGH
+

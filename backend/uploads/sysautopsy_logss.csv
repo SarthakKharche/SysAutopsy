@@ -1,0 +1,7 @@
+timestamp,service,event,severity
+10:01,payment-service,ALERT_RAISED,HIGH
+10:05,payment-service,CPU_SPIKE,MEDIUM
+10:15,payment-service,ALERT_IGNORED,HIGH
+10:32,payment-service,MANUAL_OVERRIDE,MEDIUM
+01:48,payment-service,RETRY_ATTEMPT,LOW
+02:05,payment-service,SERVICE_CRASH,CRITICAL
