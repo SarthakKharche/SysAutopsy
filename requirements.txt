@@ -3,3 +3,4 @@ firebase-admin
 pandas
 google-generativeai
 python-dotenv
+gunicorn
