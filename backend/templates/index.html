@@ -3263,12 +3263,20 @@ function renderReportsPage() {
     const topCause = report.primary_root_cause || Object.keys(report.probabilities || {})[0] || 'Unknown';
     const title = report.metadata?.incident_title || `Report #${originalIndex}`;
     const date = report.created_at ? new Date(report.created_at).toLocaleDateString() : '';
+    const reportId = report.id || report.created_at; // Use id if available, otherwise use created_at as fallback
     const div = document.createElement("div");
     div.className = "past-report-item";
+    div.style.cursor = "pointer";
     div.innerHTML = `
       <strong>${title}</strong>
       <span>${topCause}${date ? ' • ' + date : ''}</span>
     `;
+    // Make report clickable - redirect to dashboard with report_id
+    if (reportId) {
+      div.onclick = () => {
+        window.location.href = `/dashboard?report_id=${reportId}`;
+      };
+    }
     list.appendChild(div);
   });
 
@@ -3799,10 +3807,17 @@ async function sendChatMessage() {
   const loadingId = addChatMessage('Thinking...', 'ai', true);
   
   try {
+    // Get report_id from URL if available
+    const urlParams = new URLSearchParams(window.location.search);
+    const reportId = urlParams.get('report_id');
+    
     const response = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({ 
+        question,
+        report_id: reportId || null  // Pass report_id if available
+      })
     });
     
     const data = await response.json();
@@ -4366,6 +4381,32 @@ function displaySavedReport(data) {
     }
     
     latestReport = data;
+    
+    // Store analysis context in session for chatbot
+    // Note: This is a backup - the /api/report endpoint should already store it
+    try {
+      fetch('/api/set-analysis-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysis_data: data })
+      }).then(res => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          console.warn('set-analysis-context endpoint returned:', res.status, '- This is OK if server was not restarted');
+          return null;
+        }
+      }).then(result => {
+        if (result) {
+          console.log('Analysis context stored for chatbot:', result);
+        }
+      }).catch(err => {
+        // Non-critical error - the /api/report endpoint should have already stored the context
+        console.warn('Failed to store analysis context (non-critical):', err.message);
+      });
+    } catch (err) {
+      console.warn('Error storing analysis context (non-critical):', err.message);
+    }
 
   // Display metadata if present
   console.log('Checking metadata:', data.metadata);
