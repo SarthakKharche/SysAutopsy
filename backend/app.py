@@ -2,6 +2,20 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from functools import wraps
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(script_dir, '.env')
+load_dotenv(env_path)
+
+# Debug: Check if GEMINI_API_KEY is loaded
+if os.getenv("GEMINI_API_KEY"):
+    print("✅ GEMINI_API_KEY loaded from .env file")
+else:
+    print("⚠️ WARNING: GEMINI_API_KEY not found in environment variables")
+
 from analysis import analyze_logs
 from firebase_config import db
 from ai_context import run_adaptive_analysis
@@ -256,6 +270,75 @@ def project_reports_list(project_id):
     return jsonify(reports)
 
 
+def _store_analysis_context_for_chatbot(analysis_data):
+    """Helper function to store analysis context in session for chatbot access"""
+    try:
+        if not analysis_data:
+            print("WARNING: analysis_data is empty or None")
+            return
+        
+        print(f"Storing analysis context. Keys in data: {list(analysis_data.keys()) if isinstance(analysis_data, dict) else 'Not a dict'}")
+        
+        # Extract essential fields for chatbot (same structure as in /analyze route)
+        # Handle both nested and flat structures
+        context = {
+            'metadata': analysis_data.get('metadata', {}),
+            'probabilities': analysis_data.get('probabilities', {}),
+            'primary_root_cause': analysis_data.get('primary_root_cause', ''),
+            'risk_level': analysis_data.get('risk_level', ''),
+            'timeline': (analysis_data.get('timeline', []) or [])[:50],  # Store first 50 events to limit size
+            'missed_intervention': analysis_data.get('missed_intervention'),
+            'adaptive_analysis': analysis_data.get('adaptive_analysis', {}),
+            'postmortem_summary': analysis_data.get('postmortem_summary', {})
+        }
+        
+        # Verify we have at least some data before storing
+        # Try to create minimal metadata if missing but we have other fields
+        if not context.get('metadata'):
+            print("WARNING: No metadata found in analysis_data, attempting to create minimal metadata")
+            # Try to create minimal metadata from top-level fields or nested fields
+            minimal_metadata = {}
+            if analysis_data.get('incident_title'):
+                minimal_metadata['incident_title'] = analysis_data.get('incident_title', '')
+            if analysis_data.get('system_name'):
+                minimal_metadata['system_name'] = analysis_data.get('system_name', '')
+            if analysis_data.get('environment'):
+                minimal_metadata['environment'] = analysis_data.get('environment', '')
+            if analysis_data.get('severity'):
+                minimal_metadata['severity'] = analysis_data.get('severity', '')
+            if analysis_data.get('incident_type'):
+                minimal_metadata['incident_type'] = analysis_data.get('incident_type', '')
+            if analysis_data.get('owning_team'):
+                minimal_metadata['owning_team'] = analysis_data.get('owning_team', '')
+            
+            # Also check if metadata is nested somewhere else
+            if not minimal_metadata and isinstance(analysis_data, dict):
+                # Check for nested metadata
+                for key in ['metadata', 'incident_metadata', 'meta']:
+                    if key in analysis_data and isinstance(analysis_data[key], dict):
+                        minimal_metadata = analysis_data[key]
+                        break
+            
+            if minimal_metadata:
+                context['metadata'] = minimal_metadata
+                print(f"Created minimal metadata with keys: {list(minimal_metadata.keys())}")
+            else:
+                # Create empty metadata dict so the structure is consistent
+                context['metadata'] = {}
+                print("No metadata could be extracted, using empty dict")
+        
+        session['current_analysis'] = context
+        session.modified = True
+        has_metadata = bool(context.get('metadata'))
+        has_root_cause = bool(context.get('primary_root_cause'))
+        has_probs = bool(context.get('probabilities'))
+        print(f"Successfully stored analysis context. Has metadata: {has_metadata}, Has root cause: {has_root_cause}, Has probabilities: {has_probs}")
+    except Exception as e:
+        print(f"Error storing analysis context: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 @app.route("/projects/view-report", methods=["POST"])
 @login_required
 def view_report():
@@ -303,6 +386,10 @@ def get_saved_report():
                 if report.get('id') == report_id:
                     analysis_data = report.get('analysis', report)
                     print(f"get_saved_report: Found matching report, returning analysis")
+                    
+                    # Store analysis context in session for chatbot
+                    _store_analysis_context_for_chatbot(analysis_data)
+                    
                     return jsonify(analysis_data)
         
         return jsonify({"error": "Report not found"}), 404
@@ -325,6 +412,15 @@ def get_report_by_id(report_id):
             if report.get('id') == report_id:
                 # Return the analysis data from the report
                 analysis_data = report.get('analysis', report)
+                
+                # Store analysis context in session for chatbot
+                print(f"get_report_by_id: Storing context for report {report_id}")
+                _store_analysis_context_for_chatbot(analysis_data)
+                
+                # Verify it was stored
+                stored = session.get('current_analysis', {})
+                print(f"get_report_by_id: Context stored. Has metadata: {bool(stored.get('metadata'))}, Has root_cause: {bool(stored.get('primary_root_cause'))}")
+                
                 return jsonify(analysis_data)
         
         return jsonify({"error": "Report not found"}), 404
@@ -437,11 +533,18 @@ def analyze():
         # AI Confidence (for visualization)
         report["ai_confidence"] = min(adaptive_analysis["similar_incidents_found"] * 20, 100)
         
-        # Store minimal analysis info in session for chatbot context (avoid large cookie)
-        session['current_analysis_summary'] = {
+        # Store analysis context in session for chatbot (store essential fields only to avoid large cookie)
+        # The chatbot needs: metadata, probabilities, primary_root_cause, risk_level, timeline, 
+        # missed_intervention, adaptive_analysis, postmortem_summary
+        session['current_analysis'] = {
+            'metadata': metadata,
+            'probabilities': report.get('probabilities', {}),
             'primary_root_cause': report.get('primary_root_cause', ''),
             'risk_level': report.get('risk_level', ''),
-            'metadata': metadata
+            'timeline': report.get('timeline', [])[:50],  # Store first 50 events to limit size
+            'missed_intervention': report.get('missed_intervention'),
+            'adaptive_analysis': adaptive_analysis,
+            'postmortem_summary': report.get('postmortem_summary', {})
         }
         
         # Generate suggested questions for chatbot
@@ -459,12 +562,61 @@ def analyze():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/set-analysis-context", methods=["POST"])
+@login_required
+def set_analysis_context():
+    """Explicitly set analysis context in session from frontend"""
+    try:
+        data = request.json
+        analysis_data = data.get("analysis_data", {})
+        
+        if not analysis_data:
+            return jsonify({"error": "No analysis data provided"}), 400
+        
+        print(f"set-analysis-context called. Data keys: {list(analysis_data.keys()) if isinstance(analysis_data, dict) else 'Not a dict'}")
+        _store_analysis_context_for_chatbot(analysis_data)
+        
+        # Verify it was stored
+        stored_context = session.get('current_analysis', {})
+        return jsonify({
+            "success": True, 
+            "message": "Analysis context stored",
+            "has_metadata": bool(stored_context.get('metadata')),
+            "has_root_cause": bool(stored_context.get('primary_root_cause')),
+            "has_probabilities": bool(stored_context.get('probabilities'))
+        })
+    except Exception as e:
+        print(f"Error setting analysis context: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/get-analysis-context", methods=["GET"])
+@login_required
+def get_analysis_context():
+    """Debug endpoint to check current analysis context in session"""
+    try:
+        context = session.get('current_analysis', {})
+        return jsonify({
+            "has_context": bool(context),
+            "has_metadata": bool(context.get('metadata')),
+            "has_root_cause": bool(context.get('primary_root_cause')),
+            "has_probabilities": bool(context.get('probabilities')),
+            "keys": list(context.keys()) if context else []
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/chat", methods=["POST"])
+@login_required
 def chat():
     """AI Chatbot endpoint - answers questions about current analysis"""
     try:
         data = request.json
         question = data.get("question", "")
+        report_id = data.get("report_id")  # Optional: allow passing report_id directly
         
         if not question:
             return jsonify({"error": "No question provided"}), 400
@@ -472,10 +624,83 @@ def chat():
         # Get current analysis from session
         analysis_context = session.get('current_analysis', {})
         
-        if not analysis_context:
-            return jsonify({
-                "answer": "Please analyze a log file first before asking questions."
-            })
+        print(f"=== CHAT REQUEST ===")
+        print(f"Question: {question}")
+        print(f"Session ID: {session.get('_id', 'N/A')}")
+        print(f"User ID: {session.get('user_id', 'N/A')}")
+        print(f"Project ID: {session.get('current_project_id', 'N/A')}")
+        print(f"Session has current_analysis: {bool(analysis_context)}")
+        if analysis_context:
+            print(f"Analysis context keys: {list(analysis_context.keys())}")
+            print(f"Has metadata: {bool(analysis_context.get('metadata'))}")
+            print(f"Has primary_root_cause: {bool(analysis_context.get('primary_root_cause'))}")
+            print(f"Has probabilities: {bool(analysis_context.get('probabilities'))}")
+            if analysis_context.get('metadata'):
+                print(f"Metadata keys: {list(analysis_context.get('metadata', {}).keys())}")
+        print(f"===================")
+        
+        # Check if we have enough context (metadata OR other key fields)
+        has_valid_context = (
+            analysis_context and (
+                analysis_context.get('metadata') or 
+                analysis_context.get('primary_root_cause') or 
+                analysis_context.get('probabilities')
+            )
+        )
+        
+        if not has_valid_context:
+            # Try multiple fallback strategies
+            project_id = session.get('current_project_id')
+            
+            # Strategy 1: If report_id was provided, fetch that specific report
+            if report_id and project_id:
+                print(f"Fallback Strategy 1: Loading specific report {report_id}")
+                try:
+                    reports = get_project_reports(project_id)
+                    for report in reports:
+                        if report.get('id') == report_id:
+                            analysis_data = report.get('analysis', report)
+                            print(f"Found report {report_id} with keys: {list(analysis_data.keys()) if isinstance(analysis_data, dict) else 'Not a dict'}")
+                            _store_analysis_context_for_chatbot(analysis_data)
+                            analysis_context = session.get('current_analysis', {})
+                            if analysis_context:
+                                has_valid_context = (
+                                    analysis_context.get('metadata') or 
+                                    analysis_context.get('primary_root_cause') or 
+                                    analysis_context.get('probabilities')
+                                )
+                            break
+                except Exception as e:
+                    print(f"Error loading specific report: {e}")
+            
+            # Strategy 2: Get the latest report from the current project
+            if not has_valid_context and project_id:
+                print(f"Fallback Strategy 2: Loading latest report from project {project_id}")
+                try:
+                    reports = get_project_reports(project_id)
+                    if reports:
+                        latest_report = reports[0]  # Most recent report
+                        analysis_data = latest_report.get('analysis', latest_report)
+                        print(f"Found latest report with keys: {list(analysis_data.keys()) if isinstance(analysis_data, dict) else 'Not a dict'}")
+                        _store_analysis_context_for_chatbot(analysis_data)
+                        analysis_context = session.get('current_analysis', {})
+                        print(f"Loaded latest report as fallback. Has context: {bool(analysis_context)}")
+                        if analysis_context:
+                            has_valid_context = (
+                                analysis_context.get('metadata') or 
+                                analysis_context.get('primary_root_cause') or 
+                                analysis_context.get('probabilities')
+                            )
+                except Exception as e:
+                    print(f"Error loading fallback report: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
+            if not has_valid_context:
+                print("No valid analysis context found after all fallback strategies, returning error message")
+                return jsonify({
+                    "answer": "Please analyse the log report first."
+                })
         
         # Get AI answer
         answer = answer_question(question, analysis_context)
@@ -487,6 +712,8 @@ def chat():
     
     except Exception as e:
         print("ERROR in chat:", e)
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 

@@ -4,6 +4,13 @@ Uses Gemini to answer user questions about logs and analysis results
 """
 import os
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(script_dir, '.env')
+load_dotenv(env_path)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 chat_model = None
@@ -12,8 +19,26 @@ if GEMINI_API_KEY:
     try:
         genai.configure(api_key=GEMINI_API_KEY)
         chat_model = genai.GenerativeModel('gemini-2.5-flash')
+        print("✅ Gemini chatbot initialized successfully")
     except Exception as e:
-        print(f"Chat model initialization failed: {e}")
+        print(f"❌ Chat model initialization failed: {e}")
+        import traceback
+        traceback.print_exc()
+else:
+    print("⚠️ GEMINI_API_KEY not found in environment variables")
+    print(f"   Looking for .env file at: {env_path}")
+    if os.path.exists(env_path):
+        print(f"   .env file exists but key not loaded. File contents:")
+        try:
+            with open(env_path, 'r') as f:
+                content = f.read()
+                # Mask the API key for security
+                masked = content.replace('GEMINI_API_KEY=', 'GEMINI_API_KEY=***')
+                print(f"   {masked}")
+        except Exception as e:
+            print(f"   Error reading .env file: {e}")
+    else:
+        print(f"   .env file does NOT exist at: {env_path}")
 
 
 def answer_question(question, analysis_context):
