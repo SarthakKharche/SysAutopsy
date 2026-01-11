@@ -2,4 +2,4 @@ flask
 firebase-admin
 pandas
 google-generativeai
-gunicorn
+python-dotenv
